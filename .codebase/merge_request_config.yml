@@ -1,0 +1,5 @@
+code_review:
+  extensions_to_exclude: ["md"] # 注意不是 .md
+  files_to_exclude: "*.rb"
+  files_to_exclude: ""
+  extensions_to_exclude: [""]
