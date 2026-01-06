@@ -1,6 +1,7 @@
 {
-  "name": "toy",
+  "name": "matto-toolbox",
   "private": true,
+  "description": "开发妙妙小工具",
   "type": "module",
   "scripts": {
     "build": "nuxt build",
