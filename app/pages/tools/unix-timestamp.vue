@@ -2,8 +2,7 @@
 const service = new UnixTimestampService()
 const timestampInput = ref<number | string>(service.getCurrentTimestamp())
 const formattedDate = ref('')
-const selectedFormat = ref('yyyy-MM-dd HH:mm:ss')
-const formats = service.getSupportedFormats()
+const FORMAT = 'yyyy-MM-dd HH:mm:ss'
 const error = ref('')
 
 const updateFromTimestamp = () => {
@@ -12,7 +11,7 @@ const updateFromTimestamp = () => {
     const ts = Number(timestampInput.value)
     if (isNaN(ts)) throw new Error('Invalid number')
 
-    const result = service.timestampToDate(ts, selectedFormat.value)
+    const result = service.timestampToDate(ts, FORMAT)
     formattedDate.value = result.formattedDate
   } catch {
     formattedDate.value = 'Invalid Timestamp'
@@ -26,7 +25,32 @@ const updateCurrent = () => {
 }
 
 // Watchers
-watch([timestampInput, selectedFormat], updateFromTimestamp, { immediate: true })
+watch(timestampInput, updateFromTimestamp, { immediate: true })
+
+// Helpers for datetime-local input binding
+const localInputValue = computed(() => {
+  let ts = Number(timestampInput.value)
+  if (isNaN(ts)) ts = service.getCurrentTimestamp()
+  const ms = ts >= 1_000_000_000_000 ? ts : ts * 1000
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  const MM = pad(d.getMonth() + 1)
+  const dd = pad(d.getDate())
+  const hh = pad(d.getHours())
+  const mm = pad(d.getMinutes())
+  const ss = pad(d.getSeconds())
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}:${ss}`
+})
+
+const onLocalInput = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target && target.value) {
+    const date = new Date(target.value)
+    const ts = Math.floor(date.getTime() / 1000)
+    timestampInput.value = ts
+  }
+}
 
 useSeoMeta({
   title: 'Unix 时间戳转换',
@@ -61,10 +85,10 @@ useSeoMeta({
             <div>
               <label class="block text-sm font-medium text-slate-600 mb-1">Unix 时间戳</label>
               <div class="flex gap-2">
-                <UInput
+                <input
                   v-model="timestampInput"
                   type="number"
-                  class="flex-grow"
+                  class="flex-grow bg-slate-50 border border-slate-200 rounded p-2 text-slate-900 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                   placeholder="例如：1672531200"
                 />
                 <UButton
@@ -74,14 +98,6 @@ useSeoMeta({
                   当前
                 </UButton>
               </div>
-            </div>
-
-            <div>
-              <label class="block text-sm font-medium text-slate-600 mb-1">格式</label>
-              <USelect
-                v-model="selectedFormat"
-                :options="formats"
-              />
             </div>
 
             <div class="pt-4 border-t border-slate-100">
@@ -106,15 +122,10 @@ useSeoMeta({
             <p>选择日期以获取时间戳</p>
             <input
               type="datetime-local"
+              :value="localInputValue"
+              step="1"
               class="mt-4 bg-slate-50 border border-slate-200 rounded p-2 text-slate-900 w-full max-w-xs focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-              @change="(e: Event) => {
-                const target = e.target as HTMLInputElement
-                if (target && target.value) {
-                  const date = new Date(target.value)
-                  const ts = Math.floor(date.getTime() / 1000)
-                  timestampInput = ts
-                }
-              }"
+              @input="onLocalInput"
             >
             <p class="mt-2 text-xs text-slate-400">
               选择日期将自动更新上方的时间戳。
